@@ -1,7 +1,7 @@
 # Documento de Diseño: Robot Móvil Autónomo (AMR) para transporte de PCBs
 
 ESPOL · Ingeniería Mecatrónica · Sistemas Embebidos, Paralelo 102  
-Autores: Estefhano Sebastian Jaramillo Granda, Juan Andrés Láinez · Noviembre de 2026
+Autores: Estefhano Sebastian Jaramillo Granda · 17 Noviembre de 2026
 
 ## 1. Introducción
 AMR de bajo costo basado en la **Freenove ESP32-WROVER** para transportar PCBs entre estaciones sin líneas guía. Evita obstáculos con 3 sensores ultrasónicos, se guía por códigos QR (OpenCV + MQTT) y se supervisa desde un panel web.
