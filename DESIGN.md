@@ -12,12 +12,12 @@ AMR de bajo costo basado en la **Freenove ESP32-WROVER** para transportar PCBs e
 **No incluido / pendiente:** mapeo o planificación global; uso de la IMU en el control (corrección de Yaw y alarma de impactos); sensores traseros; detección de carga; BMS y carga automática; operación sin PC.
 
 ## 3. Diagrama de contexto
-![Contexto](docs/ctx.png)
+![Contexto](dcs/ctx.png)
 
 El operador envía órdenes y recibe video y telemetría; la estación central lee los QR y responde por MQTT; el entorno se percibe con ultrasonido y cámara.
 
 ## 4. Diagrama de bloques
-![Bloques](docs/blk.png)
+![Bloques](dcs/blk.png)
 
 | Bloque | Función |
 |---|---|
@@ -29,7 +29,7 @@ El operador envía órdenes y recibe video y telemetría; la estación central l
 | TB6612FNG + LM2596 | Puente H con VM directa de la LiPo 2S; 5 V para la lógica |
 
 ## 5. Máquina de estados
-![FSM](docs/fsm.png)
+![FSM](dcs/fsm.png)
 
 Prioridad por ciclo (50 Hz, sin `delay()`): (1) `META PUNTO_B` / `PARADA DE EMERGENCIA`; (2) autónomo: `AVANZANDO` → `FRENO` (frontal < 40 cm, 150 ms) → `ESQUIVANDO` (hasta ≥ 55 cm; 380–950 ms); (3) manual con bloqueo de avance < 20 cm y watchdog (600 ms sin orden / 1,5 s sin latido).
 
