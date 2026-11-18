@@ -12,7 +12,7 @@ AMR de bajo costo basado en la **Freenove ESP32-WROVER** para transportar PCBs e
 **No incluido / pendiente:** mapeo o planificación global; uso de la IMU en el control (corrección de Yaw y alarma de impactos); sensores traseros; detección de carga; BMS y carga automática; operación sin PC.
 
 ## 3. Diagrama de contexto
-![Contexto](dcs/ctx.png)
+![Contexto](ctx.png)
 
 El operador envía órdenes y recibe video y telemetría; la estación central lee los QR y responde por MQTT; el entorno se percibe con ultrasonido y cámara.
 
