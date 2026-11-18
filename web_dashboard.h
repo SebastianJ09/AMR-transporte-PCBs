@@ -1,0 +1,361 @@
+#pragma once
+#include <Arduino.h>
+
+// Centro de monitoreo web AGV-01 (vehiculo-preview-3sensores.html)
+// Servido automaticamente en http://192.168.4.1/ por AsyncWebServer
+static const char WEB_DASHBOARD_HTML[] PROGMEM = R"rawliteral(
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AGV-01 · Centro de monitoreo</title><style>:root{--bg:#050b16;--pn:#0a1628;--pn2:#0e1f38;--ln:#17304f;--tx:#d7e4f5;--mt:#7f95b3;--cy:#22d3ee;--gr:#34d399;--am:#fbbf24;--rd:#f43f5e;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1100px 500px at 85% -10%,#0b2a4a66,transparent),var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;min-height:100vh}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.side{width:216px;background:#071122;border-right:1px solid var(--ln);padding:18px 12px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;flex:none}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 16px;font-weight:700;font-size:17px;color:var(--cy)}
+.brand small{display:block;color:var(--mt);font-weight:400;font-size:12px}
+.side nav{display:flex;flex-direction:column;gap:4px}
+.side nav button{display:flex;gap:10px;align-items:center;padding:10px 12px;background:none;border:0;border-radius:8px;color:var(--mt);font:inherit;cursor:pointer;transition:background .2s,color .2s}
+.side nav button:hover{color:var(--tx)}.side nav button.on{background:#0e2a47;color:var(--cy)}
+.link{margin-top:auto;display:flex;gap:8px;align-items:center;color:var(--mt);font-size:13px;padding:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mt);display:inline-block}
+.dot.ok{background:var(--gr);animation:pulse 2s infinite}.dot.bad{background:var(--rd)}
+@keyframes pulse{50%{box-shadow:0 0 0 6px #34d39922}}
+main{flex:1;padding:22px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+h1{font-size:22px;font-weight:600}
+.badge{padding:4px 12px;border:1px solid var(--ln);border-radius:99px;font-size:13px;color:var(--mt)}
+.badge.ok{color:var(--gr);border-color:#34d39966}.badge.warn{color:var(--am);border-color:#fbbf2466}.badge.bad{color:var(--rd);border-color:#f43f5e66}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:14px}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:14px;min-width:0}
+.card h3{font-size:13px;color:var(--mt);font-weight:500;display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.val{font:600 22px var(--mono)}.ok{color:var(--gr)}.warn{color:var(--am)}.bad{color:var(--rd)}.mut{color:var(--mt)}
+small{color:var(--mt);font-size:12px}
+canvas{width:100%;height:auto;display:block}
+.view{display:none}.view.on{display:block}
+.alert{background:#f43f5e1f;border:1px solid var(--rd);color:#ffd5dc;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-weight:600}
+.cam{position:relative;background:#000;border:1px solid var(--ln);border-radius:10px;overflow:hidden;aspect-ratio:4/3}
+.cam img{width:100%;height:100%;object-fit:contain;display:block}
+.camMsg{position:absolute;inset:auto 0 10px 0;text-align:center;color:var(--mt);font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center}.row.c{justify-content:center}
+.row label{color:var(--mt);font-size:13px}
+.btn{background:var(--pn2);color:var(--tx);border:1px solid var(--ln);padding:10px 14px;border-radius:8px;cursor:pointer;font:inherit;transition:border-color .2s}
+.btn:hover{border-color:var(--cy)}.btn.pri{background:var(--cy);border-color:var(--cy);color:#02202a;font-weight:600}
+.btn.stop{background:var(--rd);border-color:var(--rd);color:#fff;font-weight:700}
+select{background:var(--pn2);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:2px 4px}
+.zones{display:grid;gap:8px;margin-bottom:10px}.zones div{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mt)}.zones span{width:50px}
+.zones b{flex:1;height:10px;background:#0e1f38;border-radius:6px;overflow:hidden}.zones i{display:block;height:100%;width:0;background:var(--cy);transition:width .2s}
+.log{list-style:none;padding:0;font:13px var(--mono);max-height:150px;overflow:auto}.log li{padding:3px 0;border-bottom:1px solid #112640}
+#last{width:100%;border-radius:8px;border:1px solid var(--ln)}.gal{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.gal img{width:64px;border-radius:4px;border:1px solid var(--ln)}
+.prox{height:16px;border-radius:8px;background:linear-gradient(90deg,#f43f5e 0 10%,#fbbf24 10% 20%,#34d399 20%);position:relative;overflow:hidden}
+.prox i{position:absolute;top:0;bottom:0;right:0;background:#050b16d9;transition:width .2s}
+.ctr{text-align:center}.ctr .val{margin:6px 0}
+.pad{display:grid;grid-template-columns:repeat(3,76px);gap:10px;justify-content:center;margin:12px 0}
+.pad button{height:76px;border-radius:14px;border:1px solid var(--ln);background:var(--pn2);color:var(--cy);font-size:26px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad button:active{background:#0e3a5c;border-color:var(--cy)}.pad .stopb{color:var(--rd)}.pad.off{opacity:.35;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--pn2);border:1px solid var(--cy);padding:8px 16px;border-radius:8px;z-index:9}
+@media(max-width:780px){
+ body{flex-direction:column}
+ .side{position:fixed;inset:auto 0 0 0;width:auto;height:auto;flex-direction:row;padding:6px;z-index:5;border-top:1px solid var(--ln);border-right:0}
+ .brand,.link{display:none}.side nav{flex-direction:row;width:100%;justify-content:space-around}.side nav button span{display:none}
+ main{padding:14px 14px 84px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5z"/><rect x="1" y="5" width="15" height="14" rx="2"/></symbol>
+<symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="M12 12L19 5"/></symbol>
+<symbol id="i-pad" viewBox="0 0 24 24"><path d="M6 12h4M8 10v4"/><circle cx="15" cy="11" r="1"/><circle cx="17" cy="13" r="1"/><rect x="2" y="6" width="20" height="12" rx="4"/></symbol>
+<symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><circle cx="9" cy="14" r="1.2"/><circle cx="15" cy="14" r="1.2"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+</defs></svg>
+
+<aside class="side">
+  <div class="brand"><svg class="i"><use href="#i-bot"/></svg><div>AGV-01<small>Vehículo autónomo de carga</small></div></div>
+  <nav>
+    <button class="on" data-v="dash" data-t="Panel principal" title="Panel"><svg class="i"><use href="#i-dash"/></svg><span>Panel</span></button>
+    <button data-v="cam" data-t="Cámara ESP32-CAM" title="Cámara"><svg class="i"><use href="#i-cam"/></svg><span>Cámara</span></button>
+    <button data-v="sen" data-t="Sensores ultrasónicos" title="Sensores"><svg class="i"><use href="#i-radar"/></svg><span>Sensores</span></button>
+    <button data-v="ctl" data-t="Control del vehículo" title="Control"><svg class="i"><use href="#i-pad"/></svg><span>Control</span></button>
+  </nav>
+  <div class="link"><i class="dot bad" id="dotLink"></i><span id="txtLink">Sin enlace</span></div>
+</aside>
+
+<main>
+  <header class="top"><h1 id="title">Panel principal</h1>
+    <div><span class="badge" id="bMode">Manual</span> <span class="badge bad" id="bState">Desconectado</span></div></header>
+  <div id="alert" class="alert" hidden></div>
+
+  <section id="dash" class="view on">
+    <div class="grid">
+      <div class="card"><h3><svg class="i"><use href="#i-bot"/></svg>Estado general</h3><div class="val" id="cState">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-pad"/></svg>Modo de operación</h3><div class="val" id="cMode">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-radar"/></svg>Frontal</h3><div class="val" id="cDist">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-radar"/></svg>Izquierdo</h3><div class="val" id="cDistL">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-radar"/></svg>Derecho</h3><div class="val" id="cDistR">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-shield"/></svg>Obstáculos</h3><div class="val" id="cObs">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-cam"/></svg>Cámara</h3><div class="val" id="cCam">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-gear"/></svg>Motores</h3><div class="val" id="cMot">—</div></div>
+      <div class="card"><h3><svg class="i"><use href="#i-shield"/></svg>Seguridad</h3><div class="val" id="cSafe">—</div><small id="cSafeSub"></small></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Radar (3 ultrasónicos + zonas de cámara)</h3><canvas id="radar" width="480" height="300"></canvas></div>
+      <div class="card"><h3>Distancia frontal, izq. y der. (últimos 30 s)</h3><canvas id="chartMini" width="560" height="300"></canvas></div>
+    </div>
+  </section>
+
+  <section id="cam" class="view">
+    <div class="grid two">
+      <div>
+        <div class="cam"><img id="camimg" crossorigin="anonymous" alt="Video de la ESP32-CAM"><div id="camMsg" class="camMsg">Conectando…</div></div>
+        <div class="row">
+          <button class="btn pri" id="bShot">Capturar foto</button>
+          <button class="btn" id="bPause">Pausar video</button>
+          <button class="btn" id="bCal" title="Con el piso despejado">Calibrar visión</button>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="chkVis" checked> Analizar obstáculos</label>
+          <label><input type="checkbox" id="chkAuto"> Foto automática cada
+            <select id="every"><option>3</option><option selected>5</option><option>10</option></select> s</label>
+        </div>
+      </div>
+      <div>
+        <div class="card"><h3>Obstáculos según la cámara</h3>
+          <div class="zones"><div><span>Izq.</span><b><i id="zl"></i></b></div><div><span>Centro</span><b><i id="zc"></i></b></div><div><span>Der.</span><b><i id="zr"></i></b></div></div>
+          <ul class="log" id="obsLog"><li class="mut">Sin obstáculos detectados</li></ul></div>
+        <div class="card"><h3>Última imagen capturada</h3><img id="last" alt="" hidden><div id="lastMsg" class="mut">Aún no hay capturas</div><div class="gal" id="gal"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sen" class="view">
+    <div class="grid"><div class="card"><h3>Frontal</h3><div class="val" id="sNow">—</div></div>
+      <div class="card"><h3>Izquierdo</h3><div class="val" id="sNowL">—</div></div>
+      <div class="card"><h3>Derecho</h3><div class="val" id="sNowR">—</div></div>
+      <div class="card"><h3>Mínima frontal</h3><div class="val" id="sMin">—</div></div>
+      <div class="card"><h3>Máxima frontal</h3><div class="val" id="sMax">—</div></div>
+      <div class="card"><h3>Promedio frontal</h3><div class="val" id="sAvg">—</div></div></div>
+    <div class="card"><h3>Proximidad frontal</h3><div class="prox"><i id="proxBar"></i></div></div>
+    <div class="card"><h3>Historial: frontal (verde seguro, amarillo precaución, rojo peligro), izquierdo (azul), derecho (violeta)</h3><canvas id="chartBig" width="900" height="300"></canvas></div>
+    <div class="card"><h3>Eventos</h3><ul class="log" id="evLog"><li class="mut">Sin eventos</li></ul></div>
+  </section>
+
+  <section id="ctl" class="view">
+    <div class="grid two">
+      <div class="card ctr"><h3>Conducción manual</h3>
+        <div class="pad" id="pad">
+          <span></span><button data-d="F">▲</button><span></span>
+          <button data-d="L">◀</button><button data-d="S" class="stopb">■</button><button data-d="R">▶</button>
+          <span></span><button data-d="B">▼</button><span></span>
+        </div>
+        <small class="mut">Mantén presionado para mover. Teclado: flechas o WASD, espacio para detener.</small></div>
+      <div class="card ctr"><h3>Modo y seguridad</h3>
+        <div class="val" id="ctlMode">Manual</div>
+        <div class="row c"><button class="btn pri" id="bMode2">Cambiar a autónomo</button></div>
+        <div class="row c"><button class="btn stop" id="bEstop">PARADA DE EMERGENCIA</button></div>
+        <small class="mut">La seguridad por distancia siempre tiene prioridad sobre las órdenes manuales. Si se pierde el enlace, el vehículo se detiene.</small></div>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast" hidden></div>
+<script>/* MODO DEMO (solo vista previa): simula la ESP32 con 3 ultrasonicos si la pagina no se abre desde 192.168.4.1 */
+if(location.hostname!=='192.168.4.1'){
+ window.WebSocket=class{
+  constructor(){this.readyState=1;this.auto=false;this.d=140;this.l=90;this.r=130;this.mc='S';this.mt=0;this.ph='fwd';this.dir='L';this.k=0;this.qr='';
+   setTimeout(()=>this.onopen&&this.onopen(),50);setInterval(()=>this.tick(),200)}
+  send(s){const m=JSON.parse(s);
+   if(m.cmd==='mode'){this.auto=m.v==='auto';this.mc='S';this.ph='fwd';if(!this.auto)this.qr=''}
+   else if(m.cmd==='estop'){this.auto=false;this.mc='S'}
+   else if(m.cmd==='move'&&!this.auto){this.mc=m.dir;this.mt=Date.now()}}
+  tick(){let mot='S',st='Detenido',ovr=false;this.k++;
+   if(this.auto){
+    if(this.ph==='turn'){mot=this.dir;st='Esquivando';this.d+=9;if(this.d>75)this.ph='fwd'}
+    else if(this.d<40){this.ph='turn';this.dir=this.l>this.r?'L':'R';mot='S';st='Obstáculo detectado'}
+    else{mot='F';st='Avanzando';this.d-=5}
+   }else{
+    if(Date.now()-this.mt>500)this.mc='S';mot=this.mc;
+    if(mot==='F'&&this.d<20){mot='S';ovr=true;st='Avance bloqueado'}
+    else if(mot!=='S')st='Manual';
+    if(mot==='F')this.d-=8;if(mot==='B')this.d+=8;
+   }
+   const w=(a,b)=>Math.max(6,Math.min(200,a+(Math.random()-.5)*b));
+   this.d=w(this.d,2);
+   this.l=Math.max(8,Math.min(200,90+55*Math.sin(this.k/14)+(Math.random()-.5)*3));
+   this.r=Math.max(8,Math.min(200,120+60*Math.sin(this.k/19+2)+(Math.random()-.5)*3));
+   const d=this.d,lvl=d<20?2:d<40?1:0;
+   this.onmessage&&this.onmessage({data:JSON.stringify({t:'tel',mode:this.auto?'auto':'manual',st,dist:d,dl:this.l,dr:this.r,sl:true,sr:true,lvl,mot,cam:true,ovr,sens:true,up:0,qr:this.qr})})}
+ };
+}
+</script>
+<script>/* AGV-01 - Cliente web. Sin librerías externas (el AP no tiene internet). */
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+/* La cámara va en la misma placa que la web: el video sale por el puerto 81 de este mismo host. */
+const CAM_HOST=location.hostname||'192.168.4.1',STREAM=`http://${CAM_HOST}:81/stream`;
+const TH={danger:20,caution:40},COL=['#34d399','#fbbf24','#f43f5e'],CLS=['ok','warn','bad'],COLL='#60a5fa',COLR='#c084fc';
+const lvlOf=d=>d<0?2:d<TH.danger?2:d<TH.caution?1:0;
+const cm=d=>d<0?'Sin eco':d.toFixed(0)+' cm';
+const MOT={S:'Detenidos',F:'Avance',B:'Retroceso',L:'Giro izq.',R:'Giro der.'};
+let ws,lastTel=0,tel=null,hist=[],lastLvl=-1,lastQr='',vis={l:0,c:0,r:0},raw=[0,0,0],base=8,hold=null;
+
+/* ---------- utilidades ---------- */
+const send=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
+const hhmm=()=>new Date().toLocaleTimeString('es-EC');
+function set(id,txt,c){const e=$(id);e.textContent=txt;e.className='val '+(c||'')}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;setTimeout(()=>t.hidden=true,2200)}
+function addLog(id,txt,max=14){const ul=$(id);if(ul.firstChild&&ul.firstChild.className==='mut')ul.innerHTML='';
+  const li=document.createElement('li');li.textContent=`${hhmm()}  ${txt}`;ul.prepend(li);while(ul.children.length>max)ul.lastChild.remove()}
+
+/* ---------- navegación ---------- */
+$$('.side nav button').forEach(b=>b.onclick=()=>{
+  $$('.side nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.view').forEach(v=>v.classList.toggle('on',v.id===b.dataset.v));
+  $('#title').textContent=b.dataset.t;
+  if(b.dataset.v==='cam')startStream();
+  draw();
+});
+
+/* ---------- WebSocket (enlace con la ESP32 principal) ---------- */
+function connect(){
+  ws=new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen=()=>setLink(true);
+  ws.onclose=()=>{setLink(false);setTimeout(connect,1500)};
+  ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.t==='tel'){tel=m;lastTel=Date.now();setLink(true);onTel(m)}}catch(_){}};
+}
+function setLink(ok){
+  $('#dotLink').className='dot '+(ok?'ok':'bad');$('#txtLink').textContent=ok?'Enlace activo':'Sin enlace';
+  if(!ok){tel=null;stopHold();$('#bState').textContent='Desconectado';$('#bState').className='badge bad';
+    set('#cState','Desconectado','bad');['#cDist','#cDistL','#cDistR','#cObs','#cCam','#cMot','#cSafe'].forEach(i=>set(i,'—'));draw()}
+}
+setInterval(()=>send({cmd:'hb'}),300);                         // latido: si falla, la ESP32 se detiene
+setInterval(()=>{if(tel&&Date.now()-lastTel>1500)setLink(false)},500);
+
+/* ---------- telemetría ---------- */
+function onTel(m){
+  const L=m.lvl,d=m.dist,auto=m.mode==='auto';
+  hist.push({d:d<0?null:d,l:L,dl:m.dl<0?null:m.dl,dr:m.dr<0?null:m.dr});if(hist.length>150)hist.shift();
+  set('#cState',m.st,CLS[L]);set('#cMode',auto?'Autónomo':'Manual');
+  set('#cDist',d<0?'Sin lectura':d.toFixed(0)+' cm',CLS[L]);
+  set('#cDistL',m.sl?cm(m.dl):'Sin sensor',m.sl?(m.dl<0?'':CLS[lvlOf(m.dl)]):'bad');
+  set('#cDistR',m.sr?cm(m.dr):'Sin sensor',m.sr?(m.dr<0?'':CLS[lvlOf(m.dr)]):'bad');
+  set('#cObs',['Libre','Obstáculo cercano','Peligro'][L],CLS[L]);
+  set('#cCam',m.cam?'En línea':'Sin señal',m.cam?'ok':'bad');
+  set('#cMot',MOT[m.mot]||'—');
+  set('#cSafe',m.ovr?'Movimiento bloqueado':'Sin intervención',m.ovr?'bad':'ok');
+  $('#cSafeSub').textContent=`Frontal ${m.sens?'OK':'FALLA'} · Izq. ${m.sl?'OK':'sin señal'} · Der. ${m.sr?'OK':'sin señal'}`;
+  $('#bMode').textContent=auto?'Autónomo':'Manual';
+  $('#bState').textContent=m.st;$('#bState').className='badge '+CLS[L];
+  $('#ctlMode').textContent=auto?'Autónomo':'Manual';
+  $('#bMode2').textContent=auto?'Cambiar a manual':'Cambiar a autónomo';
+  $('#pad').classList.toggle('off',auto);
+  const al=$('#alert');al.hidden=L<2;
+  if(L===2)al.textContent=m.sens?`Peligro: obstáculo frontal a ${d.toFixed(0)} cm. Avance bloqueado.`:'Falla del ultrasónico frontal. Avance bloqueado.';
+  if(L!==lastLvl){lastLvl=L;addLog('#evLog',['Zona segura','Precaución','Peligro'][L]+(d>=0?` a ${d.toFixed(0)} cm`:' (sin lectura)'))}
+  if(m.qr&&m.qr!==lastQr){lastQr=m.qr;addLog('#evLog','QR recibido: '+m.qr)}
+  const v=hist.filter(h=>h.d!=null).map(h=>h.d);
+  set('#sNow',d<0?'—':d.toFixed(0)+' cm',CLS[L]);
+  set('#sNowL',m.dl<0?'—':m.dl.toFixed(0)+' cm',m.dl<0?'':CLS[lvlOf(m.dl)]);
+  set('#sNowR',m.dr<0?'—':m.dr.toFixed(0)+' cm',m.dr<0?'':CLS[lvlOf(m.dr)]);
+  if(v.length){set('#sMin',Math.min(...v).toFixed(0)+' cm');set('#sMax',Math.max(...v).toFixed(0)+' cm');set('#sAvg',(v.reduce((a,b)=>a+b)/v.length).toFixed(0)+' cm')}
+  $('#proxBar').style.width=(d<0?100:Math.min(d,100))+'%';
+  draw();
+}
+
+/* ---------- gráficos (canvas propio) ---------- */
+function draw(){drawRadar();drawChart($('#chartMini'));drawChart($('#chartBig'))}
+function drawChart(cv){
+  const x=cv.getContext('2d'),W=cv.width,H=cv.height,P=30,MAX=200,Y=v=>H-14-(Math.min(v,MAX)/MAX)*(H-28);
+  x.clearRect(0,0,W,H);x.font='12px system-ui';x.lineWidth=1;
+  [[TH.danger,'#f43f5e'],[TH.caution,'#fbbf24'],[100,'#17304f'],[200,'#17304f']].forEach(([v,c])=>{
+    x.strokeStyle=c;x.setLineDash([4,4]);x.beginPath();x.moveTo(P,Y(v));x.lineTo(W,Y(v));x.stroke();x.fillStyle='#7f95b3';x.fillText(v,2,Y(v)+4)});
+  x.setLineDash([]);x.lineWidth=2.5;x.lineJoin='round';
+  const n=hist.length,X=i=>P+((i+150-n)/149)*(W-P-4);
+  [['dl',COLL],['dr',COLR]].forEach(([k,c])=>{x.strokeStyle=c;x.lineWidth=1.5;
+    for(let i=1;i<n;i++){const a=hist[i-1][k],b=hist[i][k];if(a==null||b==null)continue;
+      x.beginPath();x.moveTo(X(i-1),Y(a));x.lineTo(X(i),Y(b));x.stroke()}});
+  x.lineWidth=2.5;
+  for(let i=1;i<n;i++){const a=hist[i-1],b=hist[i];if(a.d==null||b.d==null)continue;
+    x.strokeStyle=COL[b.l];x.beginPath();x.moveTo(X(i-1),Y(a.d));x.lineTo(X(i),Y(b.d));x.stroke()}
+}
+function drawRadar(){
+  const cv=$('#radar'),x=cv.getContext('2d'),W=cv.width,H=cv.height,ox=W/2,oy=H-14,R=H-44;
+  const rr=d=>R*Math.sqrt(Math.min(d,150)/150),A0=Math.PI*1.17,A1=Math.PI*1.83;
+  x.clearRect(0,0,W,H);x.font='12px system-ui';
+  [[0,TH.danger,'#f43f5e'],[TH.danger,TH.caution,'#fbbf24'],[TH.caution,150,'#34d399']].forEach(([a,b,c])=>{
+    x.beginPath();x.arc(ox,oy,rr(b),A0,A1);x.arc(ox,oy,rr(a),A1,A0,true);x.closePath();
+    x.fillStyle=c+'22';x.fill();x.strokeStyle=c+'88';x.lineWidth=1;x.stroke()});
+  [vis.l,vis.c,vis.r].forEach((s,k)=>{const a=A0+k*(A1-A0)/3,b=a+(A1-A0)/3;
+    x.beginPath();x.moveTo(ox,oy);x.arc(ox,oy,R,a,b);x.closePath();x.fillStyle=`rgba(34,211,238,${s/100*.45})`;x.fill()});
+  x.fillStyle='#7f95b3';x.fillText('20',ox+4,oy-rr(20)-2);x.fillText('40',ox+4,oy-rr(40)-2);x.fillText('150 cm',ox+4,oy-R-2);
+  if(tel){const S=(A1-A0)/3,g=.03;   /* un arco por sensor: izquierdo | frontal | derecho */
+    [[tel.dl,0],[tel.dist,1],[tel.dr,2]].forEach(([d,k])=>{if(d<0)return;
+      x.beginPath();x.arc(ox,oy,rr(d),A0+k*S+g,A0+(k+1)*S-g);x.strokeStyle=COL[lvlOf(d)];x.lineWidth=6;x.lineCap='round';x.stroke()});
+    x.fillStyle='#7f95b3';['Izq.','Frontal','Der.'].forEach((t,k)=>{const a=A0+(k+.5)*S;x.fillText(t,ox+Math.cos(a)*(R+2)-12,oy+Math.sin(a)*(R+2)-4)})}
+  x.fillStyle='#22d3ee';x.beginPath();x.roundRect(ox-14,oy-8,28,16,4);x.fill();
+}
+
+/* ---------- cámara ---------- */
+let paused=false;const img=$('#camimg');
+function startStream(){if(paused||img.getAttribute('src'))return;img.src=STREAM+'?'+Date.now()}
+img.onload=()=>$('#camMsg').textContent='';
+img.onerror=()=>{img.removeAttribute('src');$('#camMsg').textContent='Sin señal de la ESP32-CAM. Reintentando…';
+  setTimeout(()=>{if($('#cam').classList.contains('on'))startStream()},3000)};
+$('#bPause').onclick=()=>{paused=!paused;$('#bPause').textContent=paused?'Reanudar video':'Pausar video';
+  if(paused)img.removeAttribute('src');else startStream()};
+function capture(){
+  if(!img.naturalWidth)return toast('No hay imagen para capturar');
+  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);
+  try{c.toBlob(b=>{const u=URL.createObjectURL(b);$('#last').src=u;$('#last').hidden=false;
+    $('#lastMsg').textContent='Capturada a las '+hhmm();
+    const a=document.createElement('a');a.href=u;a.download='captura-'+Date.now()+'.jpg';
+    const t=document.createElement('img');t.src=u;a.append(t);$('#gal').prepend(a);while($('#gal').children.length>6)$('#gal').lastChild.remove()},'image/jpeg',.9)}
+  catch(e){toast('El navegador bloqueó la captura (CORS)')}
+}
+$('#bShot').onclick=capture;
+let autoT=null;
+$('#chkAuto').onchange=e=>{clearInterval(autoT);if(e.target.checked)autoT=setInterval(capture,+$('#every').value*1000)};
+$('#every').onchange=()=>$('#chkAuto').onchange({target:$('#chkAuto')});
+
+/* ---------- visión: heurística de bordes en el piso (zona inferior) ---------- */
+const vc=document.createElement('canvas');vc.width=80;vc.height=60;const vx=vc.getContext('2d',{willReadFrequently:true});
+let lastObs=0;
+function analyze(){
+  if(!$('#chkVis').checked||paused||!img.naturalWidth)return;
+  try{
+    vx.drawImage(img,0,0,80,60);const d=vx.getImageData(0,24,80,36).data,W=80,H=36,g=new Float32Array(W*H);
+    for(let i=0;i<W*H;i++)g[i]=.3*d[i*4]+.59*d[i*4+1]+.11*d[i*4+2];
+    const z=[0,0,0],n=[0,0,0];
+    for(let y=1;y<H;y++)for(let xx=1;xx<W;xx++){const k=Math.min(2,Math.floor(xx/(W/3))),e=Math.abs(g[y*W+xx]-g[y*W+xx-1])+Math.abs(g[y*W+xx]-g[(y-1)*W+xx]);z[k]+=e;n[k]++}
+    raw=z.map((v,i)=>v/n[i]);
+    const s=raw.map(v=>Math.max(0,Math.min(100,Math.round((v-base)*8))));
+    vis={l:s[0],c:s[1],r:s[2]};send({cmd:'vision',...vis});
+    $('#zl').style.width=vis.l+'%';$('#zc').style.width=vis.c+'%';$('#zr').style.width=vis.r+'%';
+    const mx=Math.max(vis.l,vis.c,vis.r);
+    if(mx>=60&&Date.now()-lastObs>3000){lastObs=Date.now();
+      addLog('#obsLog',`Obstáculo ${['a la izquierda','al centro','a la derecha'][s.indexOf(mx)]} (nivel ${mx})`+(tel&&tel.dist>=0?`, ultrasónico ${tel.dist.toFixed(0)} cm`:''))}
+  }catch(e){$('#camMsg').textContent='El navegador bloqueó el análisis de video (CORS)'}
+}
+setInterval(analyze,250);
+$('#bCal').onclick=()=>{base=Math.max(...raw);toast('Visión calibrada con el piso actual')};
+
+/* ---------- control manual ---------- */
+function stopHold(){clearInterval(hold);hold=null}
+function press(d){if(!tel||tel.mode==='auto')return;stopHold();send({cmd:'move',dir:d});if(d!=='S')hold=setInterval(()=>send({cmd:'move',dir:d}),150)}
+function release(){stopHold();send({cmd:'move',dir:'S'})}
+$$('#pad button').forEach(b=>{const d=b.dataset.d;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();press(d)});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,release))});
+const KEY={ArrowUp:'F',w:'F',ArrowDown:'B',s:'B',ArrowLeft:'L',a:'L',ArrowRight:'R',d:'R',' ':'S'};
+addEventListener('keydown',e=>{const d=KEY[e.key];if(d&&!e.repeat&&$('#ctl').classList.contains('on'))press(d)});
+addEventListener('keyup',e=>{if(KEY[e.key]&&$('#ctl').classList.contains('on'))release()});
+addEventListener('blur',release);
+$('#bMode2').onclick=()=>{if(tel)send({cmd:'mode',v:tel.mode==='auto'?'manual':'auto'})};
+$('#bEstop').onclick=()=>{send({cmd:'estop'});toast('Parada de emergencia enviada')};
+
+connect();draw();
+</script>
+</body></html>
+
+)rawliteral";
