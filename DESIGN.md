@@ -1,6 +1,6 @@
 # Documento de Diseño: Robot Móvil Autónomo (AMR) para transporte de PCBs
 
-ESPOL · Ingeniería Mecatrónica · Sistemas Embebidos, Paralelo 102  
+ESPOL · Ingeniería Mecatrónica · Sistemas Embebidos, Paralelo 2 y 102  
 Autores: Estefhano Sebastian Jaramillo Granda · 17 Noviembre de 2026
 
 ## 1. Introducción
